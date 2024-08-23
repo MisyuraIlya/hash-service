@@ -1,0 +1,158 @@
+provider "aws" {
+  region = "eu-central-1"
+}
+
+# Generate a unique suffix for the bucket name
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
+# Define S3 bucket for CodePipeline artifacts
+resource "aws_s3_bucket" "pipeline_artifacts" {
+  bucket = "unique-bucket-name-${random_id.bucket_suffix.hex}"  # Ensure the bucket name is unique
+}
+
+# Define ECR repository
+resource "aws_ecr_repository" "hash_service" {
+  name = "hash-service"
+}
+
+# Define IAM role for CodeBuild
+resource "aws_iam_role" "codebuild_service_role" {
+  name = "codebuild-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action    = "sts:AssumeRole",
+        Effect    = "Allow",
+        Principal = {
+          Service = "codebuild.amazonaws.com",
+        },
+      },
+    ],
+  })
+}
+
+# Attach policies to the CodeBuild role
+resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
+  role       = aws_iam_role.codebuild_service_role.name
+  policy_arn  = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
+}
+
+# Define CodeBuild project
+resource "aws_codebuild_project" "hash_service_build" {
+  name          = "hash-service-build"
+  description   = "CodeBuild project for hash-service"
+  build_timeout  = "60"
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image        = "aws/codebuild/standard:5.0"
+    type         = "LINUX_CONTAINER"
+
+    environment_variable {
+      name  = "REPOSITORY_URL"
+      value = aws_ecr_repository.hash_service.repository_url
+    }
+
+    environment_variable {
+      name  = "AWS_REGION"
+      value = "eu-central-1"
+    }
+
+    environment_variable {
+      name  = "GITHUB_TOKEN"
+      value = data.aws_secretsmanager_secret_version.github_token_version.secret_string
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+  }
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  service_role = aws_iam_role.codebuild_service_role.arn
+}
+
+# Define IAM role for CodePipeline
+resource "aws_iam_role" "codepipeline_service_role" {
+  name = "codepipeline-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action    = "sts:AssumeRole",
+        Effect    = "Allow",
+        Principal = {
+          Service = "codepipeline.amazonaws.com",
+        },
+      },
+    ],
+  })
+}
+
+# Attach policies to the CodePipeline role
+resource "aws_iam_role_policy_attachment" "codepipeline_policy_attachment" {
+  role       = aws_iam_role.codepipeline_service_role.name
+  policy_arn  = "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess"
+}
+
+# Define CodePipeline pipeline
+resource "aws_codepipeline" "hash_service_pipeline" {
+  name     = "hash-service-pipeline"
+  role_arn = aws_iam_role.codepipeline_service_role.arn
+
+  artifact_store {
+    type     = "S3"
+    location = aws_s3_bucket.pipeline_artifacts.bucket
+  }
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "SourceAction"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "GitHub"
+      version          = "1"
+      configuration = {
+        Owner      = "MisyuraIlya"
+        Repo       = "hash-service"
+        Branch     = "main"
+        OAuthToken = data.aws_secretsmanager_secret_version.github_token_version.secret_string
+      }
+
+      output_artifacts = ["source_output"]
+    }
+  }
+
+  stage {
+    name = "Build"
+
+    action {
+      name             = "BuildAction"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["source_output"]
+      configuration = {
+        ProjectName = aws_codebuild_project.hash_service_build.name
+      }
+
+      output_artifacts = ["build_output"]
+    }
+  }
+}
+
+# Retrieve GitHub token from Secrets Manager
+data "aws_secretsmanager_secret_version" "github_token_version" {
+  secret_id = "github-token"  # Ensure this matches your Secrets Manager secret ID
+}
