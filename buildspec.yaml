@@ -8,6 +8,9 @@ phases:
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
   build:
     commands:
+      # Pull base image from Docker Hub or a cached version if available
+      - echo "Pulling base Docker image..."
+      - docker pull node:18 || true  # Try pulling the base image if available
       # Build your Docker image
       - echo "Building Docker image..."
       - docker build -t hash-service .
@@ -23,3 +26,6 @@ phases:
 artifacts:
   files:
     - '**/*'
+cache:
+  paths:
+    - '/root/.docker/**'
