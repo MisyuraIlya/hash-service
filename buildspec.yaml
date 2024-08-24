@@ -18,7 +18,7 @@ phases:
     commands:
       # Push the Docker image to ECR
       - echo "Pushing Docker image to ECR..."
-      # - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
+      - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
 
 artifacts:
   files:
