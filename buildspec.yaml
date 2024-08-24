@@ -8,6 +8,8 @@ phases:
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
       - REPOSITORY_URL=671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
+      - echo REPOSITORY_URL is $REPOSITORY_URL
+      - echo IMAGE_TAG is $IMAGE_TAG
 
   build:
     commands:
@@ -18,13 +20,16 @@ phases:
       - npm run build
       - echo Docker image is building...
       - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
+      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG
+      - echo Checking Docker images...
+      - docker images
 
   post_build:
     commands:
       - echo Build completed on $(date)
       - echo Pushing Docker image to AWS ECR...
-      - docker push $REPOSITORY_URL:$IMAGE_TAG
+      - docker images
+      - docker push $REPOSITORY_URL:$IMAGE_TAG || { echo 'Docker push failed'; exit 1; }
       - echo ECS Configuration...
       - echo Writing image definitions file...
       - CONTAINER_NAME=hash-service
