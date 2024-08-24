@@ -5,7 +5,7 @@ phases:
     commands:
       # Retrieve an authentication token and authenticate your Docker client to your ECR registry
       - echo "Retrieving ECR authentication token..."
-      - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/m5c8p2y7
   build:
     commands:
       # Build your Docker image
@@ -13,12 +13,12 @@ phases:
       - docker build -t hash-service .
       # Tag the Docker image
       - echo "Tagging Docker image..."
-      - docker tag hash-service:latest 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
+      - docker tag hash-service:latest public.ecr.aws/m5c8p2y7/hash-service:latest
   post_build:
     commands:
       # Push the Docker image to ECR
       - echo "Pushing Docker image to ECR..."
-      - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
+      - docker push public.ecr.aws/m5c8p2y7/hash-service:latest
 
 artifacts:
   files:
