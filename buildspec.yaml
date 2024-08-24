@@ -18,14 +18,14 @@ phases:
       - echo Building the NestJS project...
       - npm run build
       - echo Docker image is building... 
-      - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
+      - docker build -t hash-service .
+      - docker tag hash-service:latest 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
 
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing Docker image to AWS ECR .....
-      - docker push $REPOSITORY_URL:$IMAGE_TAG 
+      - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
       - echo ECS Configuration....
       - echo Writing image definitions file...
       - CONTAINER_NAME=hash-service
