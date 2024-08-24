@@ -3,6 +3,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
+      - echo "Repository URI: $REPOSITORY_URI"  # Debugging line
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)  # Tag the build with the build number
   build:

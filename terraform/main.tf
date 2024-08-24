@@ -17,35 +17,16 @@ resource "aws_ecr_repository" "hash_service" {
   name = "hash-service"
 }
 
-# Define IAM role for CodeBuild
-resource "aws_iam_role" "codebuild_service_role" {
-  name = "codebuild-service-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
-        Principal = {
-          Service = "codebuild.amazonaws.com",
-        },
-      },
-    ],
-  })
-}
-
-# Attach policies to the CodeBuild role
-resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
-  role       = aws_iam_role.codebuild_service_role.name
-  policy_arn  = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
+# Reference the existing IAM role for CodeBuild
+data "aws_iam_role" "codebuild_service_role" {
+  name = "admin"
 }
 
 # Define CodeBuild project
 resource "aws_codebuild_project" "hash_service_build" {
   name          = "hash-service-build"
   description   = "CodeBuild project for hash-service"
-  build_timeout  = "60"
+  build_timeout = "60"
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
@@ -69,44 +50,25 @@ resource "aws_codebuild_project" "hash_service_build" {
   }
 
   source {
-    type      = "CODEPIPELINE"
+    type = "CODEPIPELINE"
   }
 
   artifacts {
     type = "CODEPIPELINE"
   }
 
-  service_role = aws_iam_role.codebuild_service_role.arn
+  service_role = data.aws_iam_role.codebuild_service_role.arn
 }
 
-# Define IAM role for CodePipeline
-resource "aws_iam_role" "codepipeline_service_role" {
-  name = "codepipeline-service-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
-        Principal = {
-          Service = "codepipeline.amazonaws.com",
-        },
-      },
-    ],
-  })
-}
-
-# Attach policies to the CodePipeline role
-resource "aws_iam_role_policy_attachment" "codepipeline_policy_attachment" {
-  role       = aws_iam_role.codepipeline_service_role.name
-  policy_arn  = "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess"
+# Reference the existing IAM role for CodePipeline
+data "aws_iam_role" "codepipeline_service_role" {
+  name = "admin"
 }
 
 # Define CodePipeline pipeline
 resource "aws_codepipeline" "hash_service_pipeline" {
   name     = "hash-service-pipeline"
-  role_arn = aws_iam_role.codepipeline_service_role.arn
+  role_arn = data.aws_iam_role.codepipeline_service_role.arn
 
   artifact_store {
     type     = "S3"
@@ -154,5 +116,5 @@ resource "aws_codepipeline" "hash_service_pipeline" {
 
 # Retrieve GitHub token from Secrets Manager
 data "aws_secretsmanager_secret_version" "github_token_version" {
-  secret_id = "github-token"  # Ensure this matches your Secrets Manager secret ID
+  secret_id = "github"  # Ensure this matches your Secrets Manager secret ID
 }
