@@ -1,38 +1,25 @@
 version: 0.2
 
 phases:
-  install:
-    runtime-versions:
-      nodejs: 18
-    commands:
-      - echo Installing Node.js dependencies...
-      - npm install
-
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      # Retrieve an authentication token and authenticate your Docker client to your ECR registry
+      - echo "Retrieving ECR authentication token..."
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
-      - echo Setting up build environment...
-      - REPOSITORY_URL=671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
-
   build:
     commands:
-      - echo Building the NestJS project...
-      - npm run build
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URL:$IMAGE_TAG .
-
+      # Build your Docker image
+      - echo "Building Docker image..."
+      - docker build -t hash-service .
+      # Tag the Docker image
+      - echo "Tagging Docker image..."
+      - docker tag hash-service:latest 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
   post_build:
     commands:
-      - echo Tagging the Docker image...
-      - docker tag $REPOSITORY_URL:$IMAGE_TAG $REPOSITORY_URL:latest
-      - echo Pushing the Docker image to ECR...
-      - docker push $REPOSITORY_URL:$IMAGE_TAG
-      - docker push $REPOSITORY_URL:latest
-      - echo Build completed on `date`
+      # Push the Docker image to ECR
+      - echo "Pushing Docker image to ECR..."
+      - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
 
 artifacts:
   files:
     - '**/*'
-  discard-paths: yes
