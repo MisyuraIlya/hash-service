@@ -4,41 +4,36 @@ run-as: root
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo Logging in to Amazon ECR.......
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
+      - # Replace this with your repository URI
       - REPOSITORY_URL=671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
-      - echo REPOSITORY_URL is $REPOSITORY_URL
-      - echo IMAGE_TAG is $IMAGE_TAG
 
   build:
     commands:
-      - echo Build started on $(date)
+      - echo Build started on `date`
       - echo Installing Node.js dependencies...
       - npm install
       - echo Building the NestJS project...
       - npm run build
-      - echo Docker image is building...
+      - echo Docker image is building... 
       - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG
-      - echo Checking Docker images...
-      - docker images
-      - echo Docker images with tag $IMAGE_TAG:
-      - docker images | grep $IMAGE_TAG
+      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
 
   post_build:
     commands:
-      - echo Build completed on $(date)
-      - echo Pushing Docker image to AWS ECR...
-      - docker push $REPOSITORY_URL:$IMAGE_TAG || { echo 'Docker push failed'; exit 1; }
-      - echo ECS Configuration...
+      - echo Build completed on `date`
+      - echo Pushing Docker image to AWS ECR .....
+      - docker push $REPOSITORY_URL:$IMAGE_TAG 
+      - echo ECS Configuration....
       - echo Writing image definitions file...
       - CONTAINER_NAME=hash-service
       - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URL:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
-  files:
+  files: 
     - imagedefinitions.json
 
 cache:
