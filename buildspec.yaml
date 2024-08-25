@@ -5,9 +5,8 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR.......
-      - echo "REPOSITORY_URL is: $REPOSITORY_URL"  # This will echo the REPOSITORY_URL
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin $REPOSITORY_URL
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
+      - export IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
 
   build:
     commands:
@@ -18,7 +17,7 @@ phases:
       - npm run build
       - echo Docker image is building...
       - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
+      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG
 
   post_build:
     commands:
@@ -27,7 +26,7 @@ phases:
       - docker push $REPOSITORY_URL:$IMAGE_TAG
       - echo ECS Configuration....
       - echo Writing image definitions file...
-      - CONTAINER_NAME=test-api
+      - export CONTAINER_NAME=test-api
       - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URL:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
 
