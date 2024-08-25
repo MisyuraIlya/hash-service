@@ -6,7 +6,7 @@ phases:
       - echo Tag var is $TAG
       - echo TAG2 var is $TAG2  # Ensure TAG2 is printed correctly
       - echo Logging into ECR with TAG2....
-      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$TAG2"
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $TAG
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
 
   build:
