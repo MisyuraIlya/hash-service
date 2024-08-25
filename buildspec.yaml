@@ -17,18 +17,18 @@ phases:
       - echo Building the NestJS project...
       - npm run build
       - echo Docker image is building...
-      - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG
+      - docker build -t $TAG:latest .
+      - docker tag $TAG:latest $TAG:$IMAGE_TAG
 
   post_build:
     commands:
       - echo Build completed on date
       - echo Pushing Docker image to AWS ECR .....
-      - docker push $REPOSITORY_URL:$IMAGE_TAG
+      - docker push $TAG:$IMAGE_TAG
       - echo ECS Configuration....
       - echo Writing image definitions file...
       - CONTAINER_NAME=test-api
-      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URL:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $TAG:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
