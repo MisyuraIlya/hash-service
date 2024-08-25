@@ -5,25 +5,26 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR.......
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URL
+      - echo "REPOSITORY_URL is: $REPOSITORY_URL"  # This will echo the REPOSITORY_URL
+      - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin $REPOSITORY_URL
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
 
   build:
     commands:
-      - echo Build started on `date`
+      - echo Build started on date
       - echo Installing Node.js dependencies...
       - npm install
       - echo Building the NestJS project...
       - npm run build
-      - echo Docker image is building... 
+      - echo Docker image is building...
       - docker build -t $REPOSITORY_URL:latest .
       - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
 
   post_build:
     commands:
-      - echo Build completed on `date`
+      - echo Build completed on date
       - echo Pushing Docker image to AWS ECR .....
-      - docker push $REPOSITORY_URL:$IMAGE_TAG 
+      - docker push $REPOSITORY_URL:$IMAGE_TAG
       - echo ECS Configuration....
       - echo Writing image definitions file...
       - CONTAINER_NAME=test-api
@@ -31,9 +32,9 @@ phases:
       - cat imagedefinitions.json
 
 artifacts:
-  files: 
+  files:
     - imagedefinitions.json
 
 cache:
   paths:
-    - 'node_modules/**/*' 
+    - 'node_modules/**/*'
