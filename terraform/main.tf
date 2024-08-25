@@ -40,7 +40,7 @@ resource "aws_codebuild_project" "hash_service_build" {
 
     environment_variable {
       name  = "AWS_REGION"
-      value = "eu-central-1"
+      value = "us-east-1"
     }
 
     environment_variable {
