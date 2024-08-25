@@ -1,40 +1,39 @@
 version: 0.2
+run-as: root
 
 phases:
   pre_build:
     commands:
-      # Retrieve an authentication token and authenticate your Docker client to your ECR registry
-      - echo "Retrieving ECR authentication token..."
-      - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 671552989076.dkr.ecr.eu-central-1.amazonaws.com
-      
-      # Authenticate Docker to Docker Hub to increase rate limits
-      - echo "Authenticating Docker to Docker Hub..."
-      - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+      - echo Logging in to Amazon ECR.......
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URL
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
 
   build:
     commands:
-      # Build your Docker image
-      - echo "Building Docker image..."
-      - docker build -t hash-service .
-      
-      # List Docker images to verify build
-      - echo "Listing Docker images..."
-      - docker images
-      
-      # Tag the Docker image
-      - echo "Tagging Docker image..."
-      - docker tag hash-service:latest 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
+      - echo Build started on `date`
+      - echo Installing Node.js dependencies...
+      - npm install
+      - echo Building the NestJS project...
+      - npm run build
+      - echo Docker image is building... 
+      - docker build -t $REPOSITORY_URL:latest .
+      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG    
 
   post_build:
     commands:
-      # List Docker images to verify tagging
-      - echo "Listing Docker images after tagging..."
-      - docker images
-      
-      # Push the Docker image to ECR
-      - echo "Pushing Docker image to ECR..."
-      - docker push 671552989076.dkr.ecr.eu-central-1.amazonaws.com/hash-service:latest
+      - echo Build completed on `date`
+      - echo Pushing Docker image to AWS ECR .....
+      - docker push $REPOSITORY_URL:$IMAGE_TAG 
+      - echo ECS Configuration....
+      - echo Writing image definitions file...
+      - CONTAINER_NAME=test-api
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URL:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
 
 artifacts:
-  files:
-    - '**/*'
+  files: 
+    - imagedefinitions.json
+
+cache:
+  paths:
+    - 'node_modules/**/*' 

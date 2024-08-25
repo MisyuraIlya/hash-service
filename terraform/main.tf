@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-central-1"
+  region = "us-east-1"
 }
 
 # Generate a unique suffix for the bucket name
@@ -12,9 +12,9 @@ resource "aws_s3_bucket" "pipeline_artifacts" {
   bucket = "unique-bucket-name-${random_id.bucket_suffix.hex}"  # Ensure the bucket name is unique
 }
 
-# Define ECR repository
-resource "aws_ecr_repository" "hash_service" {
-  name = "hash-service"
+# Define ECR public repository for images
+resource "aws_ecrpublic_repository" "hash_service" {
+  repository_name = "hash-service"
 }
 
 # Reference the existing IAM role for CodeBuild
@@ -35,7 +35,7 @@ resource "aws_codebuild_project" "hash_service_build" {
 
     environment_variable {
       name  = "REPOSITORY_URL"
-      value = aws_ecr_repository.hash_service.repository_url
+      value = aws_ecrpublic_repository.hash_service.repository_uri
     }
 
     environment_variable {
@@ -117,4 +117,9 @@ resource "aws_codepipeline" "hash_service_pipeline" {
 # Retrieve GitHub token from Secrets Manager
 data "aws_secretsmanager_secret_version" "github_token_version" {
   secret_id = "github"  # Ensure this matches your Secrets Manager secret ID
+}
+
+# IAM Role to be granted ECR permissions
+data "aws_iam_role" "ecrpublic" {
+  name = "admin"
 }
