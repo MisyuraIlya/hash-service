@@ -16,8 +16,8 @@ phases:
       - npm run build
       - echo Docker image is building...
       - docker build -t $REPOSITORY_URL:latest .
-      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_REPOSITORY_URL  # Fixed this line
-
+      - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_REPOSITORY_URL 
+      - echo Docker image built and tagged: $REPOSITORY_URL:$IMAGE_REPOSITORY_URL
   post_build:
     commands:
       - echo Build completed on date
