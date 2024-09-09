@@ -3,11 +3,9 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR.......
-      - echo Tag var is $TAG
-      - echo TAG2 var is $TAG2  # Ensure TAG2 is printed correctly
-      - echo Logging into ECR with TAG2....
-      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $TAG
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER)
+      - echo REPOSITORY_URL var is $REPOSITORY_URL
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REPOSITORY_URL
+      - IMAGE_REPOSITORY_URL=build-$(echo $CODEBUILD_BUILD_NUMBER)
 
   build:
     commands:
@@ -17,18 +15,18 @@ phases:
       - echo Building the NestJS project...
       - npm run build
       - echo Docker image is building...
-      - docker build -t $TAG:latest .
-      - docker tag $TAG:latest $TAG:$IMAGE_TAG
+      - docker build -t $REPOSITORY_URL:latest .
+      - docker REPOSITORY_URL $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_REPOSITORY_URL
 
   post_build:
     commands:
       - echo Build completed on date
       - echo Pushing Docker image to AWS ECR .....
-      - docker push $TAG:$IMAGE_TAG
+      - docker push $REPOSITORY_URL:$IMAGE_REPOSITORY_URL
       - echo ECS Configuration....
       - echo Writing image definitions file...
       - CONTAINER_NAME=test-api
-      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $TAG:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URL:$IMAGE_REPOSITORY_URL > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
